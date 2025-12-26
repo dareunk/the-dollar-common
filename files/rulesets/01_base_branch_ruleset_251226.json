@@ -1,9 +1,9 @@
 {
-  "id": 10969219,
+  "id": 11321226,
   "name": "base_branch_ruleset",
   "target": "branch",
   "source_type": "Repository",
-  "source": "mis1-outback/test",
+  "source": "mis1-outback/dollar-front",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
@@ -55,8 +55,8 @@
   ],
   "bypass_actors": [
     {
-      "actor_id": null,
-      "actor_type": "OrganizationAdmin",
+      "actor_id": 15524325,
+      "actor_type": "Team",
       "bypass_mode": "always"
     }
   ]
