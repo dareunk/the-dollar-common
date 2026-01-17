@@ -1,0 +1,162 @@
+
+services:
+
+  userdb:
+    build:
+      context: dollar-db/docker/user
+      dockerfile: local.Dockerfile
+    image: mysqldb:local
+    container_name: user-db
+    ports:
+      - "28001:3306"
+    networks:
+      - dollar-network
+    volumes:
+      - user-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Discovery Service (Eureka Server)
+  discovery:
+    build:
+      context: dollar-discovery
+      dockerfile: docker/local.Dockerfile
+    image: dollar-discovery:local
+    container_name: discovery-server
+    ports:
+      - "28080:28080"
+    networks:
+      - dollar-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:28080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      userdb:
+        condition: service_healthy
+
+  # Config Service
+  config:
+    build:
+      context: dollar-config
+      dockerfile: docker/local.Dockerfile
+    image: dollar-config:local
+    container_name: config-server
+    ports:
+      - "28081:28081"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery:28080/eureka/
+      - CONFIG_REPO_PATH=/app/configs
+    volumes:
+      - ./dollar-config/configs:/app/configs
+    networks:
+      - dollar-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:28081/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      discovery:
+        condition: service_healthy
+
+  # Gateway Service
+  gateway:
+    build:
+      context: dollar-gateway
+      dockerfile: docker/local.Dockerfile
+    image: dollar-gateway:local
+    container_name: gateway-server
+    ports:
+      - "28083:28083"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery:28080/eureka/
+      - CONFIG_SERVER_DOMAIN=config
+    networks:
+      - dollar-network
+    depends_on:
+      config:
+        condition: service_healthy
+
+  # Auth Service
+  auth:
+    build:
+      context: dollar-auth
+      dockerfile: docker/local.Dockerfile
+    image: dollar-auth:local
+    container_name: auth-server
+    ports:
+      - "29080:29080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery:28080/eureka/
+      - CONFIG_SERVER_DOMAIN=config
+    networks:
+      - dollar-network
+    depends_on:
+      - gateway
+
+  # User Service
+  user:
+    build:
+      context: dollar-user
+      dockerfile: docker/local.Dockerfile
+    image: dollar-user:local
+    container_name: user-server
+    ports:
+      - "29081:29081"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery:28080/eureka/
+      - CONFIG_SERVER_DOMAIN=config
+    networks:
+      - dollar-network
+    depends_on:
+      - auth
+
+  # Stock Service
+  stock:
+    build:
+      context: dollar-stock
+      dockerfile: docker/local.Dockerfile
+    image: dollar-stock:local
+    container_name: stock-server
+    ports:
+      - "29082:29082"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery:28080/eureka/
+      - CONFIG_SERVER_DOMAIN=config
+    networks:
+      - dollar-network
+    depends_on:
+      - auth
+
+  # Frontend Service
+  frontend:
+    build:
+      context: dollar-front
+      dockerfile: docker/local.Dockerfile
+    image: dollar-front:local
+    container_name: frontend-server
+    ports:
+      - "5173:80"
+    environment:
+      - NODE_ENV=local
+    networks:
+      - dollar-network
+    depends_on:
+      - gateway
+      - auth
+      - user
+      - stock
+
+networks:
+  dollar-network:
+    driver: bridge
+    name: dollar-network
+
+volumes:
+  user-data:
