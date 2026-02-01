@@ -24,12 +24,12 @@ jobs:
             
             if [ "${{ github.event.inputs.service }}" = "all" ]; then
               echo "전체 서비스 배포"
-              docker compose -f ${{secrets.PATH}}/files/docker-compose-local.yml pull 
-              docker compose -f ${{secrets.PATH}}/files/docker-compose-local.yml up -d
+              docker compose -f ./common/files/docker-compose-local.yml pull 
+              docker compose -f ./common/files/docker-compose-local.yml up -d
             
             else 
               echo "선택 서비스 배포: ${{github.event.inputs.service}}"
-              docker compose -f ./files/docker-compose-local.yml pull ${{github.event.inputs.service}}
-              docker compose -f ./files/docker-compose-local.yml up -d ${{github.event.inputs.service}}
+              docker compose -f ./common/files/docker-compose-local.yml pull ${{github.event.inputs.service}}
+              docker compose -f ./common/files/docker-compose-local.yml up -d ${{github.event.inputs.service}}
             
             fi
