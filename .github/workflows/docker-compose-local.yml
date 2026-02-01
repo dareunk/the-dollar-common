@@ -1,0 +1,35 @@
+name: Docker Compose Workflow
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "배포할 이름"
+        required: true
+        default: "all"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.PATH }}
+            git pull
+            
+            if [ "${{ github.event.inputs.service }}" = "all" ]; then
+              echo "전체 서비스 배포"
+              docker compose -f docker-compose-local.yml pull 
+              docker compose -f docker-compose-local.yml up -d
+            
+            else 
+              echo "선택 서비스 배포: ${{github.event.inputs.service}}"
+              docker compose -f docker-compose-local.yml pull ${{github.event.inputs.service}}
+              docker compose -f docker-compose-local.yml up -d ${{github.event.inputs.service}}
+            
+            fi
