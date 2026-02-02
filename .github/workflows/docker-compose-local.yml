@@ -22,7 +22,7 @@ jobs:
             cd /home/ubuntu/the-dollar-common
             git pull 
             
-            if [ "${{ github.event.inputs.service }}" = "all"]; then
+            if [ "${{ github.event.inputs.service }}" = "all" ]; then
               echo "전체 서비스 배포"
               docker compose -f ./files/docker-compose-test.yml pull 
               docker compose -f ./files/docker-compose-test.yml up -d
