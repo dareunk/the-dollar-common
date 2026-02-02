@@ -1,0 +1,35 @@
+name: docker-compose-test.yml
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "배포할 서비스"
+        required: true
+        default: "all"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: 168.107.55.164
+          username: ubuntu
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/the-dollar-common
+            git pull 
+            
+            if [ "${{ github.event.inputs.service }}" = "all"]; then
+              echo "전체 서비스 배포"
+              docker compose -f ./files/docker-compose-test.yml pull 
+              docker compose -f ./files/docker-compose-test.yml up -d
+            
+            else 
+              echo "선택 서비스 배포"
+              docker compose -f ./files/docker-compose-test.yml pull ${{ github.event.inputs.service }}
+              docker compose -f ./files/docker-compose-test.yml up -d ${{ github.event.inputs.service }}
+            
+            fi
