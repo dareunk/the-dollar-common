@@ -1,9 +1,9 @@
-name: Docker Compose Workflow
+name: docker-compose-test.yml
 on:
   workflow_dispatch:
     inputs:
       service:
-        description: "배포할 이름"
+        description: "배포할 서비스"
         required: true
         default: "all"
 
@@ -13,23 +13,21 @@ jobs:
 
     steps:
       - name: SSH Deploy
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.PRIVATE_KEY }}
+          host: 168.107.55.164
+          username: ubuntu
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.PATH }}
-            git pull
+            cd /home/ubuntu/the-dollar-common
+            git pull 
             
-            if [ "${{ github.event.inputs.service }}" = "all" ]; then
+            if [ "${{ github.event.inputs.service }}" = "all"]; then
               echo "전체 서비스 배포"
               docker compose -f ./files/docker-compose-test.yml pull 
               docker compose -f ./files/docker-compose-test.yml up -d
             
             else 
-              echo "선택 서비스 배포: ${{github.event.inputs.service}}"
-              docker compose -f ./files/docker-compose-test.yml pull ${{github.event.inputs.service}}
-              docker compose -f ./files/docker-compose-test.yml up -d ${{github.event.inputs.service}}
-            
-            fi
+              echo "선택 서비스 배포"
+              docker compose -f ./files/docker-compose-test.yml pull ${{ github.event.inputs.service }}
+              docker compose -f ./files/docker-compose-test.yml up -d ${{ github.event.inputs.service }}
